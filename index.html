@@ -1,10 +1,12 @@
  <!DOCTYPE html>
  <html lang="en">
+
  <head>
    <meta charset="UTF-8">
    <meta name="viewport" content="width=device-width, initial-scale=1.0">
    <title>bilibiliVue</title>
  </head>
+
  <body>
    <div id="app">
      <h2>{{person.name}} -- {{person.age}}</h2>
@@ -20,12 +22,13 @@
      <h2 v-html="htmlStr"></h2>
      <input type="text" v-model="msg">
      <div>
-      <button v-on:click="handleClick">按钮on</button>
+       <button v-on:click="handleClick">按钮on</button>
      </div>
      <div>
-      <button @click="handleClick">按钮@</button>
+       <button @click="handleClick">按钮@</button>
      </div>
    </div>
+   <script src="./Observer.js"></script>
    <script src="./MVue.js"></script>
    <script>
      let vm = new MVue({
@@ -40,11 +43,13 @@
          msg: '学东西vue实现原理'
        },
        methods: {
-        handleClick() {
-          console.log(this)
-        }
+         handleClick() {
+           console.log(this)
+           this.$data.msg = '学习MVVM'
+         }
        }
      })
    </script>
  </body>
+
  </html>

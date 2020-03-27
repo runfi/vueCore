@@ -5,11 +5,19 @@ const compileUtil = {
       return data[currentVal]
     }, vm.$data)
   },
-  text(node,expr, vm) {
+  getContentVal(expr, vm) {
+    return expr.replace(/\{\{(.+?)\}\}/g, (...args) => {
+      return this.getVal(args[1], vm)
+    })
+  },
+  text(node, expr, vm) {
     let value;
-    if(expr.indexOf('{{') !== -1) {
-      value = expr.replace(/\{\{(.+?)\}\}/g, (...args)=>{
-        console.log(args)
+    if (expr.indexOf('{{') !== -1) {
+      value = expr.replace(/\{\{(.+?)\}\}/g, (...args) => {
+        // console.log(args)
+        new Watcher(vm, args[1], () => {
+          this.updater.textUpdater(node, this.getContentVal(expr, vm))
+        })
         return this.getVal(args[1], vm)
       })
     } else {
@@ -17,20 +25,27 @@ const compileUtil = {
     }
     this.updater.textUpdater(node, value)
   },
-  html(node,expr, vm) {
+  html(node, expr, vm) {
     const value = this.getVal(expr, vm)
+    // console.log('vm', vm)
+    new Watcher(vm, expr, (newVal) => {
+      this.updater.htmlUpdater(node, newVal)
+    })
     this.updater.htmlUpdater(node, value)
   },
-  model(node,expr, vm) {
+  model(node, expr, vm) {
     const value = this.getVal(expr, vm)
+    new Watcher(vm, expr, (newVal) => {
+      this.updater.modelUpdater(node, newVal)
+    })
     this.updater.modelUpdater(node, value)
   },
-  on(node,expr, vm, eventName) {
+  on(node, expr, vm, eventName) {
     let fn = vm.$options.methods && vm.$options.methods[expr]
-    node.addEventListener(eventName,  fn.bind(vm), false)
+    node.addEventListener(eventName, fn.bind(vm), false)
   },
   bind(node, expr, vm, attr) {
-    
+
   },
   // 更新函数
   updater: {
@@ -47,7 +62,7 @@ const compileUtil = {
 }
 
 // 编译
-class Compile{
+class Compile {
   constructor(el, vm) {
     this.el = this.isElementNode(el) ? el : document.querySelector(el)
     this.vm = vm
@@ -65,15 +80,15 @@ class Compile{
     const childNodes = fragment.childNodes;
     [...childNodes].forEach(child => {
       // console.log(child)
-      if(this.isElementNode(child)) {
+      if (this.isElementNode(child)) {
         // 是元素节点
         // 编译元素节点
         this.compileElement(child)
       } else {
         this.compileText(child)
       }
-      if(child.childNodes && child.childNodes.length) {
-       this.compile(child) 
+      if (child.childNodes && child.childNodes.length) {
+        this.compile(child)
       }
     })
   }
@@ -83,18 +98,18 @@ class Compile{
     const attributes = node.attributes;
     // console.log(attributes);
     [...attributes].forEach(attr => {
-      const {name, value} = attr
-      if(this.isDirective(name)) { // 如果是一个指令 v-开头
-        const [,directive] = name.split('-');
+      const { name, value } = attr
+      if (this.isDirective(name)) { // 如果是一个指令 v-开头
+        const [, directive] = name.split('-');
         const [dirName, eventName] = directive.split(':');
         // 更新数据
-        compileUtil[dirName](node,value,this.vm, eventName)
+        compileUtil[dirName](node, value, this.vm, eventName)
 
         // 删除有指令的标签上的属性
-        node.removeAttribute('v-'+directive)
-      } else if(this.isEventName(name)){  // 处理@click这种形式的事件触发
-        const [,eventName] = name.split('@');
-        compileUtil['on'](node,value,this.vm, eventName)
+        node.removeAttribute('v-' + directive)
+      } else if (this.isEventName(name)) {  // 处理@click这种形式的事件触发
+        const [, eventName] = name.split('@');
+        compileUtil['on'](node, value, this.vm, eventName)
       }
     })
   }
@@ -102,7 +117,7 @@ class Compile{
   compileText(node) {
     // {{}}
     const content = node.textContent
-    if(/\{\{(.+?)\}\}/.test(content)) {
+    if (/\{\{(.+?)\}\}/.test(content)) {
       // console.log(content)
       compileUtil['text'](node, content, this.vm)
     }
@@ -112,7 +127,7 @@ class Compile{
     // 创建文档碎片
     const f = document.createDocumentFragment()
     let firstChild;
-    while(firstChild = el.firstChild) {
+    while (firstChild = el.firstChild) {
       f.appendChild(firstChild)
     }
     return f;
@@ -132,19 +147,18 @@ class Compile{
 }
 
 
-class MVue{
+class MVue {
   constructor(options) {
     this.$el = options.el
     this.$data = options.data
     this.$options = options
-    if(this.$el) {
+    if (this.$el) {
       // 要有挂载节点，才进行数据的处理
       // TODO
-      /*
-        1、实现一个数据的观察者
-        2、实现一个指令的解析器
-      */
-     new Compile(this.$el, this)
+      // 1、实现一个数据的观察者
+      new Observer(this.$data)
+      // 2、实现一个指令的解析器
+      new Compile(this.$el, this)
     }
   }
 }
