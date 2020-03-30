@@ -25,7 +25,7 @@
        <button v-on:click="handleClick">按钮on</button>
      </div>
      <div>
-       <button @click="handleClick">按钮@</button>
+       <button @click="handleClick2">按钮@</button>
      </div>
    </div>
    <script src="./Observer.js"></script>
@@ -44,8 +44,12 @@
        },
        methods: {
          handleClick() {
-           console.log(this)
-           this.$data.msg = '学习MVVM'
+           //  console.log(this)
+           this.person.name = '学习MVVM'
+         },
+         handleClick2() {
+           //  console.log(this)
+           this.person.name = 'aaa'
          }
        }
      })

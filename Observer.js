@@ -65,10 +65,12 @@ class Observer {
     // 递归遍历
     this.observer(value)
     const dep = new Dep()
+    // 通过重写属性的get set，劫持并监听所有的属性
     Object.defineProperty(obj, key, {
       enumerable: true,
       configurable: false,
       get() {
+        // 初始化
         // 订阅数据变化时，往Dep中添加观察者
         Dep.target && dep.addSub(Dep.target)
         return value

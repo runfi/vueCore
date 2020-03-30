@@ -5,6 +5,12 @@ const compileUtil = {
       return data[currentVal]
     }, vm.$data)
   },
+  setVal(expr, vm, inputVal) {
+    return expr.split('.').reduce((data, currentVal) => {
+      // console.log('currentVal', currentVal)
+      data[currentVal] = inputVal
+    }, vm.$data)
+  },
   getContentVal(expr, vm) {
     return expr.replace(/\{\{(.+?)\}\}/g, (...args) => {
       return this.getVal(args[1], vm)
@@ -15,6 +21,7 @@ const compileUtil = {
     if (expr.indexOf('{{') !== -1) {
       value = expr.replace(/\{\{(.+?)\}\}/g, (...args) => {
         // console.log(args)
+        // 绑定观察者，将来数据发生变化，触发这里的回调，进行更新
         new Watcher(vm, args[1], () => {
           this.updater.textUpdater(node, this.getContentVal(expr, vm))
         })
@@ -35,8 +42,14 @@ const compileUtil = {
   },
   model(node, expr, vm) {
     const value = this.getVal(expr, vm)
+    // 绑定更新函数 数据=>视图
     new Watcher(vm, expr, (newVal) => {
       this.updater.modelUpdater(node, newVal)
+    })
+    // 视图 => 数据 => 视图
+    node.addEventListener('input', (e) => {
+      // 设置值
+      this.setVal(expr, vm, e.target.value)
     })
     this.updater.modelUpdater(node, value)
   },
@@ -159,6 +172,19 @@ class MVue {
       new Observer(this.$data)
       // 2、实现一个指令的解析器
       new Compile(this.$el, this)
+      this.proxyData(this.$data)
+    }
+  }
+  proxyData(data) {
+    for (const key in data) {
+      Object.defineProperty(this, key, {
+        get() {
+          return data[key]
+        },
+        set(newVal) {
+          data[key] = newVal
+        }
+      })
     }
   }
 }
